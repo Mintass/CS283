@@ -155,7 +155,7 @@ int word_print(char *buff, int buff_len, int str_len) {
     }
 
     printf("\n");
-    printf("Number of words returned: %d", word_count);
+    printf("Number of words returned: %d\n", word_count);
 
     return word_count;
 }
