@@ -78,6 +78,11 @@ int count_words(char *buff, int len, int str_len){
         return -2;
     }
 
+    if (str_len < 0 || str_len > len) {
+        fprintf(stderr, "Error: str_len (%d) is out of bounds (0..%d)\n", str_len, len);
+        return -3;
+    }
+
     int word_count = 0;
     int in_word = 0;
 
@@ -101,6 +106,11 @@ int  reverse_string(char *buff, int buff_len, int str_len) {
         return -1;
     }
 
+    if (str_len < 0 || str_len > buff_len) {
+        fprintf(stderr, "Error: str_len (%d) is out of bounds (0..%d)\n", str_len, buff_len);
+        return -3; 
+    }
+
     if (str_len < 2) {
         return 0;
     }
@@ -121,6 +131,12 @@ int  reverse_string(char *buff, int buff_len, int str_len) {
 int word_print(char *buff, int buff_len, int str_len) {
     if (!buff) {
         return -1;
+    }
+
+    if (str_len < 0 || str_len > buff_len) {
+        fprintf(stderr, "Error: str_len (%d) is out of bounds (0..%d)\n",
+                str_len, buff_len);
+        return -3;
     }
 
     printf("Word Print\n");
