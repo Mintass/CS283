@@ -344,11 +344,6 @@ int main(int argc, char *argv[]){
                 exit(3);
             }
 
-            printf("Reversed String: ");
-            for (int i = 0; i < user_str_len; i++){
-                putchar(buff[i]);
-            }
-            putchar('\n');
             break;
         }
 
