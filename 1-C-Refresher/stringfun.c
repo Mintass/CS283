@@ -78,7 +78,7 @@ int count_words(char *buff, int len, int str_len){
     int in_word = 0;
 
     for (int i = 0; i < str_len; i++) {
-        char c = *(buff + 1);
+        char c = buff[i];
         if (c != ' ') {
             if (!in_word) {
                 word_count++;
@@ -108,7 +108,7 @@ int  reverse_string(char *buff, int buff_len, int str_len) {
         buff[i] = buff[j];
         buff[j] = temp;
         i++;
-        j++;
+        j--;
     }
 
     return 0;
