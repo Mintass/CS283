@@ -17,7 +17,7 @@ int  count_words(char *, int, int);
 
 int setup_buff(char *buff, char *user_str, int len){
     //TODO: #4:  Implement the setup buff as per the directions
-    return 0; //for now just so the code compiles.
+    return 0; //for now just so the code compiles. 
 }
 
 void print_buff(char *buff, int len){
@@ -75,7 +75,7 @@ int main(int argc, char *argv[]){
     input_string = argv[2]; //capture the user input string
 
     //TODO:  #3 Allocate space for the buffer using malloc and
-    //          handle error if malloc fails by exiting with a
+    //          handle error if malloc fails by exiting with a 
     //          return code of 99
     // CODE GOES HERE FOR #3
 
@@ -108,10 +108,10 @@ int main(int argc, char *argv[]){
     exit(0);
 }
 
-//TODO:  #7  Notice all of the helper functions provided in the
+//TODO:  #7  Notice all of the helper functions provided in the 
 //          starter take both the buffer as well as the length.  Why
 //          do you think providing both the pointer and the length
-//          is a good practice, after all we know from main() that
+//          is a good practice, after all we know from main() that 
 //          the buff variable will have exactly 50 bytes?
-//
+//  
 //          PLACE YOUR ANSWER HERE
