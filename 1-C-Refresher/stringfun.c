@@ -372,13 +372,9 @@ int main(int argc, char *argv[]){
 
             rc = replace_substring(buff, &user_str_len, BUFFER_SZ, old_sub, new_sub);
             if (rc < 0) {
-                if (rc == -1) {
-                    printf("'%s' not found; no replacement made.\n", old_sub);
-                } else if (rc == -2) {
-                    fprintf(stderr, "error: new substring would exceed buffer capacity!\n");
-                    free(buff);
-                    exit(3);
-                }
+                printf("Not Implemented!\n");
+                free(buff);
+                exit(3);
             }
 
             break;
