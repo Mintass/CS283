@@ -379,12 +379,6 @@ int main(int argc, char *argv[]){
                     free(buff);
                     exit(3);
                 }
-            } else {
-                printf("Modified String: ");
-                for (int i = 0; i < user_str_len; i++) {
-                    putchar(buff[i]);
-                }
-                putchar('\n');
             }
 
             break;
