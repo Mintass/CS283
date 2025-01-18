@@ -151,7 +151,7 @@ int word_print(char *buff, int buff_len, int str_len) {
             putchar(buff[i]);
         }
 
-        printf(" (%d)\n", wlen);
+        printf("(%d)\n", wlen);
     }
 
     printf("\n");
