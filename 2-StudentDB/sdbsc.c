@@ -147,7 +147,6 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa){
     return NO_ERROR;
 }
 
-// TODO Delete Student
 /*
  *  del_student
  *      fd:     linux file descriptor
@@ -171,8 +170,32 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa){
  *
  */
 int del_student(int fd, int id){
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    student_t student = {0};
+    int result = get_student(fd, id, &student);
+
+    if (result == ERR_DB_FILE) {
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+
+    if (result == SRCH_NOT_FOUND) {
+        printf(M_STD_NOT_FND_MSG, id);
+        return ERR_DB_OP;
+    }
+
+    int offset = id * STUDENT_RECORD_SIZE;
+    if (lseek(fd, offset, SEEK_SET) == -1) {
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+
+    if (write(fd, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != STUDENT_RECORD_SIZE) {
+        printf(M_ERR_DB_WRITE);
+        return ERR_DB_FILE;
+    }
+
+    printf(M_STD_DEL_MSG, id);
+    return NO_ERROR;
 }
 
 // TODO Count DB
