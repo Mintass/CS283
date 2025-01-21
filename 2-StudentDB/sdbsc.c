@@ -59,7 +59,24 @@ int open_db(char *dbFile, bool should_truncate){
  *  console:  Does not produce any console I/O used by other functions
  */
 int get_student(int fd, int id, student_t *s){
-    return NOT_IMPLEMENTED_YET;
+    if (s == NULL) {
+        return ERR_DB_OP;
+    }
+
+    int offset = id * STUDENT_RECORD_SIZE;
+    if (lseek(fd, offset, SEEK_SET) == -1) {
+        return ERR_DB_FILE;
+    }
+
+    if (read(fd, s, STUDENT_RECORD_SIZE) != STUDENT_RECORD_SIZE) {
+        return ERR_DB_FILE;
+    }
+
+    if (memcmp(s, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) == 0) {
+        return SRCH_NOT_FOUND;
+    }
+
+    return NO_ERROR;
 }
 
 /*
@@ -88,10 +105,49 @@ int get_student(int fd, int id, student_t *s){
  *
  */
 int add_student(int fd, int id, char *fname, char *lname, int gpa){
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    if (validate_range(id, gpa) == EXIT_FAIL_ARGS) {
+        printf(M_ERR_STD_RNG);
+        return ERR_DB_OP;
+    }
+
+    student_t student = {0};
+
+    int offset = id * STUDENT_RECORD_SIZE;
+    if (lseek(fd, offset, SEEK_SET) == -1) {
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+
+    if (read(fd, &student, STUDENT_RECORD_SIZE) == -1) {
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+
+    if (memcmp(&student, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0) {
+        printf(M_ERR_DB_ADD_DUP, id);
+        return ERR_DB_OP;
+    }
+
+    student.id = id;
+    strncpy(student.fname, fname, sizeof(student.fname) - 1);
+    strncpy(student.lname, lname, sizeof(student.lname) - 1);
+    student.gpa = gpa;
+
+    if (lseek(fd, offset, SEEK_SET) == -1) {
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+
+    if (write(fd, &student, sizeof(student_t)) != sizeof(student_t)) {
+        printf(M_ERR_DB_WRITE);
+        return ERR_DB_FILE;
+    }
+
+    printf(M_STD_ADDED, id);
+    return NO_ERROR;
 }
 
+// TODO Delete Student
 /*
  *  del_student
  *      fd:     linux file descriptor
@@ -119,6 +175,7 @@ int del_student(int fd, int id){
     return NOT_IMPLEMENTED_YET;
 }
 
+// TODO Count DB
 /*
  *  count_db_records
  *      fd:     linux file descriptor
@@ -148,6 +205,7 @@ int count_db_records(int fd){
     return NOT_IMPLEMENTED_YET;
 }
 
+// TODO Print DB
 /*
  *  print_db
  *      fd:     linux file descriptor
@@ -186,6 +244,7 @@ int print_db(int fd){
     return NOT_IMPLEMENTED_YET;
 }
 
+// TODO Print Student
 /*
  *  print_student
  *      *s:   a pointer to a student_t structure that should
@@ -218,6 +277,7 @@ void print_student(student_t *s){
     printf(M_NOT_IMPL);
 }
 
+// TODO Compress DB
 /*
  *  NOTE IMPLEMENTING THIS FUNCTION IS EXTRA CREDIT
  *
@@ -490,12 +550,13 @@ int main(int argc, char *argv[]){
             printf(M_DB_ZERO_OK);
             exit_code = EXIT_OK;
             break;
+            
         default:
             usage(argv[0]);
             exit_code = EXIT_FAIL_ARGS;
     }
 
-    //dont forget to close the file before exiting, and setting the
+    //don't forget to close the file before exiting, and setting the
     //proper exit code - see the header file for expected values
     close(fd);
     exit(exit_code);
