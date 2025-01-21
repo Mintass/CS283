@@ -42,3 +42,6 @@ CTestCostData.txt
 # Ignore other temporary or backup files
 *.DS_Store
 Thumbs.db
+
+# Ignore vscode configuration files
+.vscode/
