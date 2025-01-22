@@ -114,27 +114,39 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa){
 
     student_t student = {0};
 
-    int offset = id * STUDENT_RECORD_SIZE;
-    if (lseek(fd, offset, SEEK_SET) == -1) {
-        printf(M_ERR_DB_READ);
+    int result = get_student(fd, id, &student);
+    if (result == ERR_DB_FILE) {
+        printf(ERR_DB_FILE);
         return ERR_DB_FILE;
-    }
-
-    if (read(fd, &student, STUDENT_RECORD_SIZE) == -1) {
-        printf(M_ERR_DB_READ);
-        return ERR_DB_FILE;
-    }
-
-    if (memcmp(&student, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0) {
+    } else if (result != SRCH_NOT_FOUND) {
         printf(M_ERR_DB_ADD_DUP, id);
         return ERR_DB_OP;
     }
+
+
+
+    // int offset = id * STUDENT_RECORD_SIZE;
+    // if (lseek(fd, offset, SEEK_SET) == -1) {
+    //     printf(M_ERR_DB_READ);
+    //     return ERR_DB_FILE;
+    // }
+
+    // if (read(fd, &student, STUDENT_RECORD_SIZE) == -1) {
+    //     printf(M_ERR_DB_READ);
+    //     return ERR_DB_FILE;
+    // }
+
+    // if (memcmp(&student, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0) {
+    //     printf(M_ERR_DB_ADD_DUP, id);
+    //     return ERR_DB_OP;
+    // }
 
     student.id = id;
     strncpy(student.fname, fname, sizeof(student.fname) - 1);
     strncpy(student.lname, lname, sizeof(student.lname) - 1);
     student.gpa = gpa;
 
+    int offset = id * STUDENT_RECORD_SIZE;
     if (lseek(fd, offset, SEEK_SET) == -1) {
         printf(M_ERR_DB_READ);
         return ERR_DB_FILE;
