@@ -226,7 +226,7 @@ int del_student(int fd, int id){
 int count_db_records(int fd){
     student_t student = {0};
     int count = 0;
-    size_t bytes = 0;
+    int bytes = 0;
 
     if (lseek(fd, 0, SEEK_SET) == -1) {
         printf(M_ERR_DB_READ);
