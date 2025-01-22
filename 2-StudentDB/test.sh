@@ -175,8 +175,8 @@ setup_file() {
     }
 }
 
-if you implemented the compress db function remove the 
-skip from the tests below
+# if you implemented the compress db function remove the 
+# skip from the tests below
 
 @test "Double check storage at this point" {
    run du -h ./student.db
