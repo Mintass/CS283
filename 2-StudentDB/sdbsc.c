@@ -448,7 +448,7 @@ int compress_db(int fd){
         }
 
         if (memcmp(&student, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0) {
-            if (write(fd, &student, STUDENT_RECORD_SIZE) != STUDENT_RECORD_SIZE) {
+            if (write(tmp_fd, &student, STUDENT_RECORD_SIZE) != STUDENT_RECORD_SIZE) {
                 printf(M_ERR_DB_WRITE);
                 close(tmp_fd);
                 return ERR_DB_FILE;
