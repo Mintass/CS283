@@ -233,7 +233,7 @@ int count_db_records(int fd){
         return ERR_DB_FILE;
     }
 
-    while ((bytes = read(fd, &student, STUDENT_RECORD_SIZE) > 0)) {
+    while ((bytes = read(fd, &student, STUDENT_RECORD_SIZE)) > 0) {
         if (bytes < STUDENT_RECORD_SIZE) {
             printf(M_ERR_DB_READ);
             return ERR_DB_FILE;
