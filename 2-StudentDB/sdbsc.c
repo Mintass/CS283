@@ -198,7 +198,6 @@ int del_student(int fd, int id){
     return NO_ERROR;
 }
 
-// TODO Count DB
 /*
  *  count_db_records
  *      fd:     linux file descriptor
@@ -258,7 +257,6 @@ int count_db_records(int fd){
     return count;
 }
 
-// TODO Print DB
 /*
  *  print_db
  *      fd:     linux file descriptor
@@ -293,11 +291,46 @@ int count_db_records(int fd){
  *
  */
 int print_db(int fd){
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    student_t student = {0};
+    int bytes = 0;
+    bool record_found = 0;
+
+    if (lseek(fd, 0, SEEK_SET) == -1) {
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+
+    while ((bytes = read(fd, &student, STUDENT_RECORD_SIZE)) > 0) {
+        if (bytes < STUDENT_RECORD_SIZE) {
+            printf(M_ERR_DB_READ);
+            return ERR_DB_FILE;
+        }
+
+        if (memcmp(&student, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0) {
+            if (!record_found) {
+                printf(STUDENT_PRINT_HDR_STRING, "ID",
+                            "FIRST NAME", "LAST_NAME", "GPA");
+                record_found = 1;
+            }
+
+            float calculated_gpa_from_s = (float)(student.gpa) / 100;
+            printf(STUDENT_PRINT_FMT_STRING, student.id, student.fname,
+                                        student.lname, calculated_gpa_from_s);
+        }
+    }
+
+    if (bytes == -1) {
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+
+    if (!record_found) {
+        printf(M_DB_EMPTY);
+    }
+
+    return NO_ERROR;
 }
 
-// TODO Print Student
 /*
  *  print_student
  *      *s:   a pointer to a student_t structure that should
@@ -327,7 +360,17 @@ int print_db(int fd){
  *
  */
 void print_student(student_t *s){
-    printf(M_NOT_IMPL);
+    if (s == NULL || s->id == 0){
+        printf(M_ERR_STD_PRINT);
+        return;
+    }
+    
+    printf(STUDENT_PRINT_HDR_STRING, "ID",
+                "FIRST NAME", "LAST NAME", "GPA");
+    
+    float calculated_gpa_from_s = (float)(s->gpa) / 100;
+    printf(STUDENT_PRINT_FMT_STRING, s->id, s->fname,
+                            s->lname, calculated_gpa_from_s);
 }
 
 // TODO Compress DB
