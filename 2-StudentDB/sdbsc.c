@@ -10,6 +10,8 @@
 #include "db.h"
 #include "sdbsc.h"
 
+#include <time.h>
+
 /*
  *  open_db
  *      dbFile:  name of the database file
@@ -60,7 +62,7 @@ int open_db(char *dbFile, bool should_truncate){
  */
 int get_student(int fd, int id, student_t *s){
     if (s == NULL) {
-        return ERR_DB_OP;
+        return ERR_DB_FILE;
     }
 
     int offset = id * STUDENT_RECORD_SIZE;
@@ -373,7 +375,6 @@ void print_student(student_t *s){
                             s->lname, calculated_gpa_from_s);
 }
 
-// TODO Compress DB
 /*
  *  NOTE IMPLEMENTING THIS FUNCTION IS EXTRA CREDIT
  *
@@ -423,7 +424,59 @@ void print_student(student_t *s){
  *
  */
 int compress_db(int fd){
-    printf(M_NOT_IMPL);
+    student_t student = {0};
+    int bytes = 0;
+    int tmp_fd = -1;
+
+    tmp_fd = open_db(TMP_DB_FILE, false);
+    if (tmp_fd < 0) {
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+
+    if (lseek(fd, 0, SEEK_SET) == -1) {
+        printf(M_ERR_DB_READ);
+        close(tmp_fd);
+        return ERR_DB_FILE;
+    }
+
+    while ((bytes = read(fd, &student, STUDENT_RECORD_SIZE)) > 0) {
+        if (bytes < STUDENT_RECORD_SIZE) {
+            printf(M_ERR_DB_READ);
+            close(tmp_fd);
+            return ERR_DB_FILE;
+        }
+
+        if (memcmp(&student, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE) != 0) {
+            if (write(fd, &student, STUDENT_RECORD_SIZE) != STUDENT_RECORD_SIZE) {
+                printf(M_ERR_DB_WRITE);
+                close(tmp_fd);
+                return ERR_DB_FILE;
+            }
+        }
+    }
+
+    if (bytes == -1) {
+        printf(M_ERR_DB_READ);
+        close(tmp_fd);
+        return ERR_DB_FILE;
+    }
+
+    close(tmp_fd);
+    close(fd);
+
+    if (rename(TMP_DB_FILE, DB_FILE) != 0) {
+        printf(M_ERR_DB_CREATE);
+        return ERR_DB_FILE;
+    }
+
+    fd = open_db(DB_FILE, false);
+    if (fd < 0) {
+        printf(M_ERR_DB_OPEN);
+        return ERR_DB_FILE;
+    }
+
+    printf(M_DB_COMPRESSED_OK);
     return fd;
 }
 
