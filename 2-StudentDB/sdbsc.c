@@ -116,7 +116,7 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa){
 
     int result = get_student(fd, id, &student);
     if (result == ERR_DB_FILE) {
-        printf(ERR_DB_FILE);
+        printf(M_ERR_DB_READ);
         return ERR_DB_FILE;
     } else if (result != SRCH_NOT_FOUND) {
         printf(M_ERR_DB_ADD_DUP, id);
