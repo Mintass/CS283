@@ -70,7 +70,7 @@ int get_student(int fd, int id, student_t *s){
         return ERR_DB_FILE;
     }
 
-    if (read(fd, s, STUDENT_RECORD_SIZE) != STUDENT_RECORD_SIZE) {
+    if (read(fd, s, STUDENT_RECORD_SIZE) == -1) {
         return ERR_DB_FILE;
     }
 
