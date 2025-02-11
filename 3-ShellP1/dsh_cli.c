@@ -68,6 +68,11 @@ int main()
         if (strcmp(cmd_buff, EXIT_CMD) == 0) {
             exit(0);
         }
+
+        if (strcmp(cmd_buff, "dragon") == 0) {
+            print_dragon();
+            continue;
+        }
         
         clist.num = 0;
 
