@@ -56,22 +56,30 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
     if (strlen(trimmed_line) == 0) {
         return WARN_NO_CMDS;
     }
-    
+
     int cmdCount = 0;
-    char *token = strtok(cmd_line, PIPE_STRING);
+    char *pipe_saveptr = NULL;
+    char *token = strtok_r(cmd_line, PIPE_STRING, &pipe_saveptr);
     while (token != NULL) {
         char *cmd_token = trim_whitespace(token);
         if (strlen(cmd_token) > 0) {
             if (cmdCount >= CMD_MAX) {
                 return ERR_TOO_MANY_COMMANDS;
             }
-            
-            char *inner = strtok(cmd_token, " ");
+
+            char cmd_copy[SH_CMD_MAX];
+            if (strlen(cmd_token) >= SH_CMD_MAX) {
+                return ERR_CMD_OR_ARGS_TOO_BIG;
+            }
+
+            strcpy(cmd_copy, cmd_token);
+            char *space_saveptr = NULL;
+            char *inner = strtok_r(cmd_copy, " ", &space_saveptr);
             if (inner == NULL) {
-                token = strtok(NULL, PIPE_STRING);
+                token = strtok_r(NULL, PIPE_STRING, &pipe_saveptr);
                 continue;
             }
-            
+
             if (strlen(inner) >= EXE_MAX) {
                 return ERR_CMD_OR_ARGS_TOO_BIG;
             }
@@ -79,7 +87,7 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
             strcpy(clist->commands[cmdCount].exe, inner);
             clist->commands[cmdCount].args[0] = '\0';
 
-            inner = strtok(NULL, " ");
+            inner = strtok_r(NULL, " ", &space_saveptr);
             while (inner != NULL) {
                 if (strlen(clist->commands[cmdCount].args) > 0) {
                     if (strlen(clist->commands[cmdCount].args) + 1 + strlen(inner) >= ARG_MAX) {
@@ -88,10 +96,9 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
 
                     strcat(clist->commands[cmdCount].args, " ");
                 } else {
-                    if (strlen(inner) >= ARG_MAX)
-                    {
+                    if (strlen(inner) >= ARG_MAX) {
                         return ERR_CMD_OR_ARGS_TOO_BIG;
-                    }                   
+                    }
                 }
 
                 if (strlen(clist->commands[cmdCount].args) + strlen(inner) >= ARG_MAX) {
@@ -99,19 +106,19 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
                 }
 
                 strcat(clist->commands[cmdCount].args, inner);
-                inner = strtok(NULL, " ");
+                inner = strtok_r(NULL, " ", &space_saveptr);
             }
-            
+
             cmdCount++;
         }
-        
-        token = strtok(NULL, PIPE_STRING);
+
+        token = strtok_r(NULL, PIPE_STRING, &pipe_saveptr);
     }
 
     clist->num = cmdCount;
     if (cmdCount == 0) {
         return WARN_NO_CMDS;
     }
-    
+
     return OK;
 }
