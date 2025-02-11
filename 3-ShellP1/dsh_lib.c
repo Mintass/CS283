@@ -46,7 +46,7 @@
  */
 int main()
 {
-    char *cmd_buff;
+    char cmd_buff[SH_CMD_MAX];
     int rc = 0;
     command_list_t clist;
 
