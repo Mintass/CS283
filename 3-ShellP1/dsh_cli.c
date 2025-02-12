@@ -46,7 +46,12 @@
  */
 int main()
 {
-    char cmd_buff[SH_CMD_MAX];
+    char *cmd_buff = malloc(SH_CMD_MAX * sizeof(char));
+    if (cmd_buff == NULL) {
+        perror("malloc failed");
+        exit(EXIT_FAILURE);
+    }
+
     int rc = 0;
     command_list_t clist;
 
@@ -103,5 +108,6 @@ int main()
         
     }
     
+    free(cmd_buff);
     return 0;
 }
