@@ -263,9 +263,8 @@ int exec_local_cmd_loop()
     }
 
 	char cmd_buff[SH_CMD_MAX];
-    int cmdCount = 0;   // pass assignment test
     while (1) {
-        if (cmdCount > 0) {     // pass assignment test
+        if (cmdCount > 0) {
             printf("%s", SH_PROMPT);
             fflush(stdout);
         }
@@ -299,8 +298,6 @@ int exec_local_cmd_loop()
 	    } else {
 		    exec_cmd(&cmd);
 	    }
-
-        cmdCount++;     // pass assignment test
     }
 
 	free_cmd_buff(&cmd);
