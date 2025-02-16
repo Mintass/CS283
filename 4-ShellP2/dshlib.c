@@ -300,7 +300,7 @@ int exec_local_cmd_loop()
 		    exec_cmd(&cmd);
 	    }
 
-        commandCount++;     // pass assignment test
+        cmdCount++;     // pass assignment test
     }
 
 	free_cmd_buff(&cmd);
