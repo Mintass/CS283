@@ -13,7 +13,8 @@
 @test "Change directory" {
     current=$(pwd)
 
-    mkdir -p "${current}/dsh-test"
+    cd /tmp
+    mkdir -p dsh-test
 
     run "${current}/dsh" <<EOF                
 cd dsh-test
@@ -43,8 +44,9 @@ EOF
 @test "Change directory - no args" {
     current=$(pwd)
 
-    mkdir -p "${current}/dsh-test"
-
+    cd /tmp
+    mkdir -p dsh-test
+    
     run "${current}/dsh" <<EOF                
 cd
 pwd
