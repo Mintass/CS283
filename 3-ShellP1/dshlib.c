@@ -120,5 +120,6 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
         return WARN_NO_CMDS;
     }
 
+    printf("cmdloopreturned%d", OK);
     return OK;
 }
