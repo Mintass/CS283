@@ -264,10 +264,8 @@ int exec_local_cmd_loop()
 
 	char cmd_buff[SH_CMD_MAX];
     while (1) {
-        if (cmdCount > 0) {
-            printf("%s", SH_PROMPT);
-            fflush(stdout);
-        }
+        printf("%s", SH_PROMPT);
+        fflush(stdout);
 
 	    if (fgets(cmd_buff, SH_CMD_MAX, stdin) == NULL) {
 		    printf("\n");
