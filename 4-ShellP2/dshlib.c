@@ -177,6 +177,11 @@ Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
 		return BI_EXECUTED;
 	}
 
+    if (type == BI_RC) {
+        printf("%d\n", last_exit_code);
+        return BI_EXECUTED;
+    }    
+
 	return  BI_NOT_BI;
 }
 
@@ -264,8 +269,10 @@ int exec_local_cmd_loop()
 
 	char cmd_buff[SH_CMD_MAX];
     while (1) {
-        printf("%s", SH_PROMPT);
-        fflush(stdout);
+        if (isatty(STDIN_FILENO)) {
+            printf("%s", SH_PROMPT);
+            fflush(stdout);
+        }
 
 	    if (fgets(cmd_buff, SH_CMD_MAX, stdin) == NULL) {
 		    printf("\n");
