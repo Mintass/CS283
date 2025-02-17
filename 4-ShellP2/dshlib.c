@@ -268,15 +268,15 @@ int exec_local_cmd_loop()
     }
 
 	char cmd_buff[SH_CMD_MAX];
+    int interactive = isatty(STDIN_FILENO);
+
     while (1) {
-        // test
         printf("%s", SH_PROMPT);
-        if (fgets(cmd_buff, SH_CMD_MAX, stdin) == NULL) {
-            printf("\n");
-            break;
+        if (interactive) {
+            fflush(stdout)
         }
 
-	    if (fgets(cmd_buff, SH_CMD_MAX, stdin) == NULL) {
+        if (fgets(cmd_buff, SH_CMD_MAX, stdin) == NULL) {
 		    printf("\n");
 	    	break;
 	    }
