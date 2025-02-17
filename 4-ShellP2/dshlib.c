@@ -273,7 +273,7 @@ int exec_local_cmd_loop()
     while (1) {
         printf("%s", SH_PROMPT);
         if (interactive) {
-            fflush(stdout)
+            fflush(stdout);
         }
 
         if (fgets(cmd_buff, SH_CMD_MAX, stdin) == NULL) {
