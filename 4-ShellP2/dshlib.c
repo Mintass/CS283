@@ -160,9 +160,11 @@ Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
 		} else if (cmd->argc == 2) {
 			if (chdir(cmd->argv[1]) != 0) {
 				perror("cd failed");
+                return ERR_EXEC_CMD;
 			}
 		} else {
 			fprintf(stderr, "cd: too many arguments\n");
+            return ERR_CMD_ARGS_BAD;
 		}
 
 		return BI_EXECUTED;
@@ -171,6 +173,7 @@ Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
 	if (type == BI_CMD_DRAGON) {
 		if (cmd->argc > 1) {
 			fprintf(stderr, "dragon: too many arguments\n");
+            return ERR_CMD_ARGS_BAD;
 		}
 
 		print_dragon();
