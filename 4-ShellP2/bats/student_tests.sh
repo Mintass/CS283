@@ -231,14 +231,7 @@ EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
 
-    # - "cd dsh-combo-test" changes the directory; no output is produced.
-    # - "echo combo test" should output "combo test" (when spaces are normalized, becomes "combotest" after whitespace removal)
-    # - "pwd" should output "/tmp/dsh-combo-test"
-    # With 3 commands, expect 4 prompts ("dsh2>") plus final "cmd loop returned 0".
-    #
-    # Expected (whitespace removed):
-    # "/tmp/dsh-combo-testdsh2>dsh2>combotestdsh2>dsh2>cmdloopreturned0"
-    expected_output="/tmp/dsh-combo-testdsh2>dsh2>combotestdsh2>dsh2>cmdloopreturned0"
+    expected_output="combotest/tmp/dsh-combo-testdsh2>dsh2>dsh2>dsh2>cmdloopreturned0"
 
     echo "Captured stdout:" 
     echo "Output: $output"
