@@ -52,11 +52,13 @@ EOF
 @test "cd into directory with no permission" {
     # This test creates a temporary directory with a subdirectory that has no permissions.
     # Attempting to cd into this directory should result in an error message.
+    current=$(pwd)
+
     cd /tmp
     mkdir -p no_perm_dir
     chmod 000 no_perm_dir
 
-    run "./dsh" <<EOF
+    run "${current}/dsh" <<EOF
 cd no_perm_dir
 pwd
 EOF
@@ -86,7 +88,7 @@ EOF
     
     cd /tmp
 
-    run "./dsh" <<EOF
+    run "${current}/dsh" <<EOF
 cd dir1 dir2
 EOF
 
