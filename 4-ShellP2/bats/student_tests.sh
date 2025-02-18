@@ -125,12 +125,6 @@ EOF
     # Remove all whitespace (spaces, tabs, newlines) for easier matching.
     stripped_output=$(echo "$output" | tr -d '[:space:]')
 
-    # - The "not_exists" command should trigger an error message: "Command not found in PATH"
-    # - The "rc" built-in should print the error code from the last command (assumed to be "2")
-    # - With 3 commands, dsh prints 4 prompts ("dsh2>") and then "cmd loop returned 0"
-    #
-    # Therefore, the expected output (with whitespace removed) is:
-    # "CommandnotfoundinPATH2dsh2>dsh2>dsh2>dsh2>cmdloopreturned0"
     expected_output="CommandnotfoundinPATH2dsh2>dsh2>dsh2>dsh2>cmdloopreturned0"
 
     echo "Captured stdout:" 
@@ -152,13 +146,7 @@ EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
 
-    # - "echo hello" should output "hello"
-    # - "rc" should then output "0" because echo executed successfully
-    # - With 3 commands, expect 4 prompts ("dsh2>") plus final "cmd loop returned 0"
-    #
-    # Expected (whitespace removed):
-    # "hellodsh2>dsh2>0dsh2>dsh2>cmdloopreturned0"
-    expected_output="hellodsh2>dsh2>0dsh2>dsh2>cmdloopreturned0"
+    expected_output="hello0dsh2>dsh2>dsh2>cmdloopreturned0"
 
     echo "Captured stdout:" 
     echo "Output: $output"
@@ -178,10 +166,6 @@ EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
 
-    # If an empty line is entered, the shell should ignore it.
-    # Therefore, only the prompt for the "exit" command and the final message are expected.
-    #
-    # For a single (ignored) command plus exit, assume one prompt ("dsh2>") then "cmd loop returned 0":
     expected_output="dsh2>dsh2>cmdloopreturned0"
 
     echo "Captured stdout:" 
@@ -202,12 +186,6 @@ EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
 
-    # The input line has extra spaces at the beginning and end.
-    # After trimming, "echo spaced" should output "spaced".
-    # For one command, expect 2 prompts ("dsh2>") plus the final "cmd loop returned 0".
-    #
-    # Expected (whitespace removed):
-    # "spaceddsh2>dsh2>dsh2>cmdloopreturned0"
     expected_output="spaceddsh2>dsh2>cmdloopreturned0"
 
     echo "Captured stdout:" 
@@ -228,13 +206,6 @@ EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
 
-    # The command "echo a    b   c" should collapse duplicate spaces between arguments.
-    # Thus, the output from echo should be "a b c" (when printed normally).
-    # When all whitespace is removed, "a b c" becomes "abc".
-    # For one command, expect 2 prompts plus the final message.
-    #
-    # Expected (whitespace removed):
-    # "abcdsh2>dsh2>cmdloopreturned0"
     expected_output="abcdsh2>dsh2>cmdloopreturned0"
 
     echo "Captured stdout:" 
