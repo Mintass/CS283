@@ -53,13 +53,11 @@ EOF
     # This test creates a temporary directory with a subdirectory that has no permissions.
     # Attempting to cd into this directory should result in an error message.
     cd /tmp
-    tmp_dir=$(mktemp -d)
-    no_perm_dir="$tmp_dir/no_perm"
-    mkdir -p "$no_perm_dir"
-    chmod 000 "$no_perm_dir"
+    mkdir -p no_perm_dir
+    chmod 000 no_perm_dir
 
     run "./dsh" <<EOF
-cd $no_perm_dir
+cd no_perm_dir
 pwd
 EOF
 
@@ -85,9 +83,11 @@ EOF
 
 @test "cd with too many arguments" {
     # This test verifies that providing too many arguments to cd results in an error message.
+    
+    cd /tmp
+
     run "./dsh" <<EOF
 cd dir1 dir2
-exit
 EOF
 
     # Strip all whitespace (spaces, tabs, newlines) from the output
