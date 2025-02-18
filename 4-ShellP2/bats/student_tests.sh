@@ -140,8 +140,8 @@ EOF
     current=$(pwd)
 
     run "${current}/dsh" <<EOF
-dragon
-dragon
+echo hello
+rc
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
