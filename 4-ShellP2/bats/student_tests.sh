@@ -85,11 +85,13 @@ EOF
 
 @test "cd with too many arguments" {
     # This test verifies that providing too many arguments to cd results in an error message.
-    
+    current=$(pwd)
+
     cd /tmp
 
     run "${current}/dsh" <<EOF
 cd dir1 dir2
+pwd
 EOF
 
     # Strip all whitespace (spaces, tabs, newlines) from the output
