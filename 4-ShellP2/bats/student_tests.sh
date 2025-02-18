@@ -6,6 +6,9 @@
 # to supplement the assignment_tests.sh.
 #
 # The tests cover:
+#   - cd with non-existent directory
+#   - cd into directory with no permission
+#   - cd with too many arguments
 #   - Extra Credit: Nonexistent command error and "rc" built-in command
 #   - Extra Credit: Successful external command returns rc 0
 #   - Handling of an empty input line
@@ -24,7 +27,6 @@
     run "${current}/dsh" <<EOF
 cd /nonexistent_directory
 pwd
-exit
 EOF
 
     # Strip all whitespace (spaces, tabs, newlines) from the output
@@ -50,6 +52,7 @@ EOF
 @test "cd into directory with no permission" {
     # This test creates a temporary directory with a subdirectory that has no permissions.
     # Attempting to cd into this directory should result in an error message.
+    cd /tmp
     tmp_dir=$(mktemp -d)
     no_perm_dir="$tmp_dir/no_perm"
     mkdir -p "$no_perm_dir"
@@ -58,14 +61,13 @@ EOF
     run "./dsh" <<EOF
 cd $no_perm_dir
 pwd
-exit
 EOF
 
     # Strip all whitespace (spaces, tabs, newlines) from the output
     stripped_output=$(echo "$output" | tr -d '[:space:]')
 
     # Expected output with all whitespace removed for easier matching
-    expected_output="/tmp/dsh-testdsh2>dsh2>dsh2>cmdloopreturned0"
+    expected_output="cdfailed:Permissiondenied/tmpdsh2>dsh2>dsh2>cmdloopreturned0"
 
     # These echo commands will help with debugging and will only print
     #if the test fails
@@ -92,7 +94,7 @@ EOF
     stripped_output=$(echo "$output" | tr -d '[:space:]')
 
     # Expected output with all whitespace removed for easier matching
-    expected_output="cd:toomanyargumentsdsh2>cmdloopreturned0"
+    expected_output="cd:toomanyargumentsdsh2>dsh2>cmdloopreturned0"
 
     # These echo commands will help with debugging and will only print
     #if the test fails
