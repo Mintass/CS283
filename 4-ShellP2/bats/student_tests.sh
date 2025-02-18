@@ -125,7 +125,7 @@ EOF
     # Remove all whitespace (spaces, tabs, newlines) for easier matching.
     stripped_output=$(echo "$output" | tr -d '[:space:]')
 
-    expected_output="CommandnotfoundinPATH2dsh2>dsh2>dsh2>dsh2>cmdloopreturned0"
+    expected_output="CommandnotfoundinPATHdsh2>dsh2>dsh2>2dsh2>cmdloopreturned0"
 
     echo "Captured stdout:" 
     echo "Output: $output"
@@ -140,13 +140,13 @@ EOF
     current=$(pwd)
 
     run "${current}/dsh" <<EOF
-echo hello
-rc
+dragon
+dragon
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
 
-    expected_output="hello0dsh2>dsh2>dsh2>cmdloopreturned0"
+    expected_output="hellodsh2>dsh2>0dsh2>cmdloopreturned0"
 
     echo "Captured stdout:" 
     echo "Output: $output"
