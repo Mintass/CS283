@@ -115,7 +115,9 @@ EOF
 }
 
 @test "Extra Credit: Nonexistent command error and rc built-in" {
-    run "./dsh" <<EOF
+    current=$(pwd)
+
+    run "${current}/dsh" <<EOF
 not_exists
 rc
 EOF
@@ -134,15 +136,16 @@ EOF
     echo "Captured stdout:" 
     echo "Output: $output"
     echo "Exit Status: $status"
-    echo "Stripped Output: ${stripped_output}"
-    echo "Expected Output: ${expected_output}"
+    echo "${stripped_output} -> ${expected_output}"
 
     [ "$stripped_output" = "$expected_output" ]
     [ "$status" -eq 0 ]
 }
 
 @test "Extra Credit: Successful external command and rc returns 0" {
-    run "./dsh" <<EOF
+    current=$(pwd)
+
+    run "${current}/dsh" <<EOF
 echo hello
 rc
 EOF
@@ -160,15 +163,16 @@ EOF
     echo "Captured stdout:" 
     echo "Output: $output"
     echo "Exit Status: $status"
-    echo "Stripped Output: ${stripped_output}"
-    echo "Expected Output: ${expected_output}"
+    echo "${stripped_output} -> ${expected_output}"
 
     [ "$stripped_output" = "$expected_output" ]
     [ "$status" -eq 0 ]
 }
 
 @test "Empty input line is handled gracefully" {
-    run "./dsh" <<EOF
+    current=$(pwd)
+
+    run "${current}/dsh" <<EOF
        
 EOF
 
@@ -183,15 +187,16 @@ EOF
     echo "Captured stdout:" 
     echo "Output: $output"
     echo "Exit Status: $status"
-    echo "Stripped Output: ${stripped_output}"
-    echo "Expected Output: ${expected_output}"
+    echo "${stripped_output} -> ${expected_output}"
 
     [ "$stripped_output" = "$expected_output" ]
     [ "$status" -eq 0 ]
 }
 
 @test "Command with leading and trailing spaces" {
-    run "./dsh" <<EOF
+    current=$(pwd)
+
+    run "${current}/dsh" <<EOF
    echo spaced   
 EOF
 
@@ -208,15 +213,16 @@ EOF
     echo "Captured stdout:" 
     echo "Output: $output"
     echo "Exit Status: $status"
-    echo "Stripped Output: ${stripped_output}"
-    echo "Expected Output: ${expected_output}"
+    echo "${stripped_output} -> ${expected_output}"
 
     [ "$stripped_output" = "$expected_output" ]
     [ "$status" -eq 0 ]
 }
 
 @test "Multiple spaces between arguments collapse to single space in output" {
-    run "./dsh" <<EOF
+    current=$(pwd)
+    
+    run "${current}/dsh" <<EOF
 echo a    b   c
 EOF
 
@@ -234,8 +240,7 @@ EOF
     echo "Captured stdout:" 
     echo "Output: $output"
     echo "Exit Status: $status"
-    echo "Stripped Output: ${stripped_output}"
-    echo "Expected Output: ${expected_output}"
+    echo "${stripped_output} -> ${expected_output}"
 
     [ "$stripped_output" = "$expected_output" ]
     [ "$status" -eq 0 ]
@@ -267,8 +272,7 @@ EOF
     echo "Captured stdout:" 
     echo "Output: $output"
     echo "Exit Status: $status"
-    echo "Stripped Output: ${stripped_output}"
-    echo "Expected Output: ${expected_output}"
+    echo "${stripped_output} -> ${expected_output}"
 
     [ "$stripped_output" = "$expected_output" ]
     [ "$status" -eq 0 ]
