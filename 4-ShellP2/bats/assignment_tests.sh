@@ -49,6 +49,7 @@ EOF
     
     run "${current}/dsh" <<EOF                
 cd
+ls
 pwd
 EOF
 

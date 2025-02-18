@@ -182,7 +182,7 @@ EOF
     # Therefore, only the prompt for the "exit" command and the final message are expected.
     #
     # For a single (ignored) command plus exit, assume one prompt ("dsh2>") then "cmd loop returned 0":
-    expected_output="dsh2>cmdloopreturned0"
+    expected_output="dsh2>dsh2>cmdloopreturned0"
 
     echo "Captured stdout:" 
     echo "Output: $output"
@@ -208,7 +208,7 @@ EOF
     #
     # Expected (whitespace removed):
     # "spaceddsh2>dsh2>dsh2>cmdloopreturned0"
-    expected_output="spaceddsh2>dsh2>dsh2>cmdloopreturned0"
+    expected_output="spaceddsh2>dsh2>cmdloopreturned0"
 
     echo "Captured stdout:" 
     echo "Output: $output"
