@@ -98,7 +98,7 @@ EOF
     stripped_output=$(echo "$output" | tr -d '[:space:]')
 
     # Expected output with all whitespace removed for easier matching
-    expected_output="cd:toomanyargumentsdsh2>dsh2>cmdloopreturned0"
+    expected_output="cd:toomanyarguments/tmpdsh2>dsh2>dsh2>cmdloopreturned0"
 
     # These echo commands will help with debugging and will only print
     #if the test fails
@@ -118,7 +118,6 @@ EOF
     run "./dsh" <<EOF
 not_exists
 rc
-exit
 EOF
 
     # Remove all whitespace (spaces, tabs, newlines) for easier matching.
@@ -146,7 +145,6 @@ EOF
     run "./dsh" <<EOF
 echo hello
 rc
-exit
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
@@ -172,7 +170,6 @@ EOF
 @test "Empty input line is handled gracefully" {
     run "./dsh" <<EOF
        
-exit
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
@@ -196,7 +193,6 @@ EOF
 @test "Command with leading and trailing spaces" {
     run "./dsh" <<EOF
    echo spaced   
-exit
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
@@ -222,7 +218,6 @@ EOF
 @test "Multiple spaces between arguments collapse to single space in output" {
     run "./dsh" <<EOF
 echo a    b   c
-exit
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
@@ -256,7 +251,6 @@ EOF
 cd dsh-combo-test
 echo combo test
 pwd
-exit
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
