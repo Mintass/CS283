@@ -17,7 +17,7 @@
     mkdir -p dsh-test-hx84
 
     run "${current}/dsh" <<EOF                
-cd dsh-test
+cd dsh-test-hx84
 pwd
 EOF
 
