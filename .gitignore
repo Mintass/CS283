@@ -45,3 +45,11 @@ Thumbs.db
 
 # Ignore vscode configuration files
 .vscode/
+
+# Ignore executable file
+stringfun
+sdbsc
+dsh
+
+# Ignore DB file
+*.db
