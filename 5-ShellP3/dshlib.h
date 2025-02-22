@@ -21,6 +21,10 @@ typedef struct cmd_buff
     int  argc;
     char *argv[CMD_ARGV_MAX];
     char *_cmd_buffer;
+    // extra credit
+    char *input_file;
+    char *output_file;
+    bool append;
 } cmd_buff_t;
 
 /* WIP - Move to next assignment 
@@ -42,6 +46,11 @@ typedef struct command_list{
 #define SPACE_CHAR  ' '
 #define PIPE_CHAR   '|'
 #define PIPE_STRING "|"
+
+// Redirection operator
+#define INPUT_REDIRECT "<"
+#define OUTPUT_REDIRECT ">"
+#define APPEND_REDIRECT ">>"
 
 #define SH_PROMPT "dsh3> "
 #define EXIT_CMD "exit"
@@ -81,6 +90,7 @@ Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd);
 int exec_local_cmd_loop();
 int exec_cmd(cmd_buff_t *cmd);
 int execute_pipeline(command_list_t *clist);
+int process_redirection(cmd_buff_t *cmd);   // extra credit
 
 //drexel dragon
 extern void print_dragon();

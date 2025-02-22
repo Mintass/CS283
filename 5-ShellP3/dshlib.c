@@ -132,7 +132,63 @@ int close_cmd_buff(cmd_buff_t *cmd_buff) {
 	return free_cmd_buff(cmd_buff);
 }
 
-/* -------------------- command line splitting  -------------------- */
+/* -------------------- redirect processing -------------------- */
+int process_redirection(cmd_buff_t *cmd) {
+	int i = 0, j = 0;
+	while (cmd->argv[i] != NULL) {
+		if (strcmp(cmd->argv[i], INPUT_REDIRECT) == 0) {
+			if (cmd->argv[i+1] == NULL) {
+				fprintf(stderr, "redirect: missing input file for redirection\n");
+				return ERR_CMD_ARGS_BAD;
+			}
+
+			if (cmd->input_file != NULL) {
+				fprintf(stderr, "redirect: multiple input redirection operators\n");
+				return ERR_CMD_ARGS_BAD;
+			}
+
+			cmd->input_file == strdup(cmd->argv[i+1]);
+			i += 2;
+		} else if (strcmp(cmd->argv[i], OUTPUT_REDIRECT) == 0) {
+			if (cmd->argv[i+1] == NULL) {
+				fprintf(stderr, "redirect: missing output file for redirection '>'\n");
+				return ERR_CMD_ARGS_BAD;
+			}
+
+			if (cmd->output_file != NULL) {
+				fprintf(stderr, "redirect: multiple output redirection operators\n");
+				return ERR_CMD_ARGS_BAD;
+			}
+			
+			cmd->output_file = strdup(cmd->argv[i+1]);
+			cmd->append = false;
+			i += 2;
+		} else if (strcmp(cmd->argv[i], APPEND_REDIRECT) == 0) {
+			if (cmd->argv[i+1] == NULL) {
+				fprintf(stderr, "redirect: missing output file for redirection '>>'\n");
+				return ERR_CMD_ARGS_BAD;
+			}
+
+			if (cmd->output_file != NULL) {
+				fprintf(stderr, "redirect: multiple output redirection operators\n");
+				return ERR_CMD_ARGS_BAD;
+			}
+
+			cmd->output_file = strdup(cmd->argv[i+1]);
+			cmd->append = true;
+			i += 2;
+		} else {
+			cmd->argv[j++] = cmd->argv[i++];
+		}
+	}
+
+	cmd->argv[j] = NULL;
+	cmd->argc = j;
+
+	return OK;
+}
+
+/* -------------------- command line splitting -------------------- */
 int build_cmd_list(char *cmd_line, command_list_t *clist) {
 	char *saveptr;
 	int count = 0;
@@ -164,6 +220,7 @@ int build_cmd_list(char *cmd_line, command_list_t *clist) {
 			return rc;
 		}
 
+		process_redirection(&clist->commands[count]);
 		count++;
 		token = strtok_r(NULL, PIPE_STRING, &saveptr);
 	}
@@ -243,6 +300,35 @@ int exec_cmd(cmd_buff_t *cmd) {
 	}
 
 	if (pid == 0) {
+		// extra credit
+		if (cmd->input_file != NULL) {
+			int fd_in = open(cmd->input_file, O_RDONLY);
+			if (fd_in < 0) {
+				perror("open input file");
+				exit(ERR_EXEC_CMD);
+			}
+
+			dup2(fd_in, STDIN_FILENO);
+			close(fd_in);
+		}
+
+		if (cmd->output_file != NULL) {
+			int fd_out;
+			if (cmd->append) {
+				fd_out = open(cmd->output_file, O_WRONLY | O_CREAT | O_APPEND, 0644);
+			} else {
+				fd_out = open(cmd->output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+			}
+
+			if (fd_out < 0) {
+				perror("open output file");
+				exit(ERR_EXEC_CMD);
+			}
+
+			dup2(fd_out, STDOUT_FILENO);
+			close(fd_out);
+		}
+
 		execvp(cmd->argv[0], cmd->argv);
 		perror("execvp");
 		exit(ERR_EXEC_CMD);
@@ -282,6 +368,35 @@ int execute_pipeline(command_list_t *clist) {
 
 			if (i < num - 1) {
 				dup2(curr_pipe_fd[1], STDOUT_FILENO);
+			}
+
+			// extra credit
+			if (i == 0 && clist->commands[i].input_file != NULL) {
+				int fd_in = open(clist->commands[i].input_file, O_RDONLY);
+				if (fd_in < 0) {
+					perror("open input file");
+					exit(ERR_EXEC_CMD);
+				}
+
+				dup2(fd_in, STDIN_FILENO);
+				close(fd_in);
+			}
+
+			if (i == num - 1 && clist->commands[i].output_file != NULL) {
+				int fd_out;
+				if (clist->commands[i].append) {
+					fd_out = open(clist->commands[i].output_file, O_WRONLY | O_CREAT | O_APPEND, 0644);
+				} else {
+					fd_out = open(clist->commands[i].output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+				}
+
+				if (fd_out < 0) {
+					perror("open output file");
+					exit(ERR_EXEC_CMD);
+				}
+
+				dup2(fd_out, STDOUT_FILENO);
+				close(fd_out);
 			}
 
 			if (i > 0) {
