@@ -21,6 +21,11 @@ int alloc_cmd_buff(cmd_buff_t *cmd_buff) {
 		cmd_buff->argv[i] = NULL;
 	}
 
+    // extra credit
+    cmd_buff->input_file = NULL;
+    cmd_buff->output_file = NULL;
+    cmd_buff->append = false;
+
 	return OK;
 }
 
@@ -147,7 +152,7 @@ int process_redirection(cmd_buff_t *cmd) {
 				return ERR_CMD_ARGS_BAD;
 			}
 
-			cmd->input_file == strdup(cmd->argv[i+1]);
+			cmd->input_file = strdup(cmd->argv[i+1]);
 			i += 2;
 		} else if (strcmp(cmd->argv[i], OUTPUT_REDIRECT) == 0) {
 			if (cmd->argv[i+1] == NULL) {

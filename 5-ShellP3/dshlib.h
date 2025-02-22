@@ -1,6 +1,8 @@
 #ifndef __DSHLIB_H__
     #define __DSHLIB_H__
 
+// extra credit
+#include <stdbool.h>
 
 //Constants for command structure sizes
 #define EXE_MAX 64
