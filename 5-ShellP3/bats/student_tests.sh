@@ -5,22 +5,21 @@
 # Create your unit tests suit in this file
 
 setup() {
-  mkdir -p ~/tmp
+  mkdir -p $HOME/tmp
 }
 
 teardown() {
-  rm -f ~/tmp/in.txt ~/tmp/in2.txt ~/tmp/out.txt ~/tmp/another.txt ~/tmp/notwritable.txt
+  rm -f $HOME/tmp/in.txt $HOME/tmp/in2.txt $HOME/tmp/out.txt $HOME/tmp/another.txt $HOME/tmp/notwritable.txt
 }
 
 # Command Parsing Test
 @test "empty input" {
     run "./dsh" <<EOF
      
-exit
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>warning:nocommandsprovideddsh3>cmdloopreturned0"
+    expected_output="warning:nocommandsprovideddsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"
@@ -31,15 +30,50 @@ EOF
     [ "$status" -eq 0 ]
 }
 
-@test "too long command" {
-    long_command=$(printf 'a%.0s' {1..70})
+@test "command too lohg" {
+    long_cmd=$(printf 'a%.0s' {1..360})
     run "./dsh" <<EOF
-$long_command
-exit
+$long_cmd
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>Errorparsingcommandlinedsh3>cmdloopreturned0"
+    expected_output="error:maximumbuffersizeforuserinputis320dsh3>dsh3>cmdloopreturned0"
+
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "exe too long" {
+    long_exe=$(printf 'a%.0s' {1..70})
+    run "./dsh" <<EOF
+$long_exe
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="error:commandnametoolongerrorparsingcommandlinedsh3>dsh3>cmdloopreturned0"
+
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "arg too long" {
+    long_arg=$(printf 'a%.0s' {1..300})
+    run "./dsh" <<EOF
+echo $long_arg
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="error:argumenttoolongerrorparsingcommandlinedsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"
@@ -54,11 +88,10 @@ EOF
     
     run "./dsh" <<EOF
 echo 1 | echo 2 | echo 3 | echo 4 | echo 5 | echo 6 | echo 7 | echo 8 | echo 9
-exit
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>error:pipinglimitedto8commandsdsh3>cmdloopreturned0"
+    expected_output="error:pipinglimitedto8commandsdsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"
@@ -72,11 +105,10 @@ EOF
 @test "quote handling: parameters with spaces" {
     run "./dsh" <<EOF
 echo "hello world"
-exit
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>helloworlddsh3>cmdloopreturned0"
+    expected_output="helloworlddsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"
@@ -90,11 +122,10 @@ EOF
 @test "quote handling: redirection symbols inside quotes" {
     run "./dsh" <<EOF
 echo "hello > world"
-exit
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>hello>worlddsh3>cmdloopreturned0"
+    expected_output="hello>worlddsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"
@@ -107,15 +138,14 @@ EOF
 
 # Redirection Test
 @test "input redirection normal" {
-    echo "Hello World" > ~/tmp/in.txt
+    echo "Hello World" > $HOME/tmp/in.txt
 
     run "./dsh" <<EOF
-cat < ~/tmp/in.txt
-exit
+cat < $HOME/tmp/in.txt
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>HelloWorlddsh3>cmdloopreturned0"
+    expected_output="HelloWorlddsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"
@@ -129,11 +159,10 @@ EOF
 @test "missing input filename" {
     run "./dsh" <<EOF
 cat <
-exit
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>Error:missinginputfileforredirection'<'dsh3>cmdloopreturned0"
+    expected_output="redirect:missinginputfileforredirectionerrorparsingcommandlinedsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"
@@ -145,16 +174,15 @@ EOF
 }
 
 @test "multiple input redirection" {
-    echo "Content1" > ~/tmp/in.txt
-    echo "Content2" > ~/tmp/in2.txt
+    echo "Content1" > $HOME/tmp/in.txt
+    echo "Content2" > $HOME/tmp/in2.txt
 
     run "./dsh" <<EOF
-cat < ~/tmp/in.txt < ~/tmp/in2.txt
-exit
+cat < $HOME/tmp/in.txt < $HOME/tmp/in2.txt
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>Error:multipleinputredirectionoperatorsdsh3>cmdloopreturned0"
+    expected_output="redirect:multipleinputredirectionoperatorserrorparsingcommandlinedsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"
@@ -166,16 +194,15 @@ EOF
 }
 
 @test "output redirection overwrite" {
-    rm -f ~/tmp/out.txt
+    rm -f $HOME/tmp/out.txt
 
     run "./dsh" <<EOF
-echo "HelloOverwrite" > ~/tmp/out.txt
-cat < ~/tmp/out.txt
-exit
+echo "HelloOverwrite" > $HOME/tmp/out.txt
+cat < $HOME/tmp/out.txt
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>dsh3>HelloOverwritedsh3>cmdloopreturned0"
+    expected_output="HelloOverwritedsh3>dsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"
@@ -187,17 +214,16 @@ EOF
 }
 
 @test "output redirection append" {
-    rm -f ~/tmp/out.txt
+    rm -f $HOME/tmp/out.txt
 
     run "./dsh" <<EOF
-echo "Line1" > ~/tmp/out.txt
-echo "Line2" >> ~/tmp/out.txt
-cat < ~/tmp/out.txt
-exit
+echo "Line1" > $HOME/tmp/out.txt
+echo "Line2" >> $HOME/tmp/out.txt
+cat < $HOME/tmp/out.txt
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>dsh3>dsh3>Line1Line2dsh3>cmdloopreturned0"
+    expected_output="Line1Line2dsh3>dsh3>dsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"
@@ -211,11 +237,10 @@ EOF
 @test "missing output filename overwrite" {
     run "./dsh" <<EOF
 echo "Hello" >
-exit
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>Error:missingoutputfileforredirection'>'dsh3>cmdloopreturned0"
+    expected_output="redirect:missingoutputfileforredirection'>'errorparsingcommandlinedsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"
@@ -229,11 +254,10 @@ EOF
 @test "missing output filename append" {
     run "./dsh" <<EOF
 echo "Hello" >>
-exit
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>Error:missingoutputfileforredirection'>>'dsh3>cmdloopreturned0"
+    expected_output="redirect:missingoutputfileforredirection'>>'errorparsingcommandlinedsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"
@@ -246,12 +270,11 @@ EOF
 
 @test "multiple output redirection" {
     run "./dsh" <<EOF
-echo "Hello" > ~/tmp/out.txt > ~/tmp/another.txt
-exit
+echo "Hello" > $HOME/tmp/out.txt > $HOME/tmp/another.txt
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>Error:multipleoutputredirectionoperatorsdsh3>cmdloopreturned0"
+    expected_output="redirect:multipleoutputredirectionoperatorserrorparsingcommandlinedsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"
@@ -263,15 +286,14 @@ EOF
 }
 
 @test "nonexistent input file" {
-    rm -f ~/tmp/nonexistent.txt
+    rm -f $HOME/tmp/nonexistent.txt
 
     run "./dsh" <<EOF
-cat < ~/tmp/nonexistent.txt
-exit
+cat < $HOME/tmp/nonexistent.txt
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>openinput_file:Nosuchfileordirectorydsh3>cmdloopreturned0"
+    expected_output="openinputfile:Nosuchfileordirectorydsh3>dsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"
@@ -283,16 +305,15 @@ EOF
 }
 
 @test "output file not writable" {
-    echo "ExistingContent" > ~/tmp/notwritable.txt
-    chmod 444 ~/tmp/notwritable.txt
+    echo "ExistingContent" > $HOME/tmp/notwritable.txt
+    chmod 444 $HOME/tmp/notwritable.txt
 
     run "./dsh" <<EOF
-echo "Test" > ~/tmp/notwritable.txt
-exit
+echo "Test" > $HOME/tmp/notwritable.txt
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
-    expected_output="dsh3>openoutput_file:Permissiondenieddsh3>cmdloopreturned0"
+    expected_output="openoutputfile:Permissiondenieddsh3>dsh3>dsh3>cmdloopreturned0"
 
     echo "Captured stdout:"
     echo "Output: $output"

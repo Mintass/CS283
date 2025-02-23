@@ -80,6 +80,16 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
 			if (*p == '"') {
 				in_quote = false;
 				token[token_index] = '\0';
+                if (token_index >= ARG_MAX) {
+                    fprintf(stderr, "error: argument too long\n");
+                    return ERR_CMD_OR_ARGS_TOO_BIG;
+                }
+
+                if (argc == 0 && strlen(token) >= EXE_MAX) {
+                    fprintf(stderr, "error: command name too long\n");
+                    return ERR_CMD_OR_ARGS_TOO_BIG;
+                }
+
 				if (token_index > 0) {
 					if (argc >= CMD_ARGV_MAX - 1) {
 						return ERR_CMD_ARGS_BAD;
@@ -92,6 +102,11 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
 				token_index = 0;
 				in_token = false;
 			} else {
+                if (token_index >= ARG_MAX - 1) {
+                    fprintf(stderr, "error: argument too long\n");
+                    return ERR_CMD_OR_ARGS_TOO_BIG;
+                }
+
 				token[token_index++] = *p;
 			}
 		} else {
@@ -101,6 +116,16 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
 			} else if (isspace((unsigned char)*p)) {
 				if (in_token) {
 					token[token_index] = '\0';
+                    if (token_index >= ARG_MAX) {
+                        fprintf(stderr, "error: argument too long\n");
+                        return ERR_CMD_OR_ARGS_TOO_BIG;
+                    }
+    
+                    if (argc == 0 && strlen(token) >= EXE_MAX) {
+                        fprintf(stderr, "error: command name too long\n");
+                        return ERR_CMD_OR_ARGS_TOO_BIG;
+                    }
+
 					if (argc >= CMD_ARGV_MAX - 1) {
 						return  ERR_CMD_ARGS_BAD;
 					}
@@ -112,6 +137,11 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
 				}
 			} else {
 				in_token = true;
+                if (token_index >= ARG_MAX - 1) {
+                    fprintf(stderr, "error: argument too long\n");
+                    return ERR_CMD_OR_ARGS_TOO_BIG;
+                }
+
 				token[token_index++] = *p;
 			}
 		}
@@ -121,6 +151,11 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
 
 	if (in_token || in_quote) {
 		token[token_index] = '\0';
+        if (argc == 0 && strlen(token) >= EXE_MAX) {
+            fprintf(stderr, "error: command name too long\n");
+            return ERR_CMD_OR_ARGS_TOO_BIG;
+        }
+
 		if (argc < CMD_ARGV_MAX - 1) {
 			cmd_buff->argv[argc] = strdup(token);
 			argc++;
@@ -225,7 +260,11 @@ int build_cmd_list(char *cmd_line, command_list_t *clist) {
 			return rc;
 		}
 
-		process_redirection(&clist->commands[count]);
+		rc = process_redirection(&clist->commands[count]);
+        if (rc != OK) {
+            return rc;
+        }
+        
 		count++;
 		token = strtok_r(NULL, PIPE_STRING, &saveptr);
 	}
@@ -487,10 +526,18 @@ int exec_local_cmd_loop()
 	char cmd_buff[SH_CMD_MAX];
 	while (1) {
 		printf("%s", SH_PROMPT);
-		if (fgets(cmd_buff, ARG_MAX, stdin) == NULL) {
+		if (fgets(cmd_buff, SH_CMD_MAX, stdin) == NULL) {
 			printf("\n");
 			break;
 		}
+
+        if (strchr(cmd_buff, '\n') == NULL) {
+            fprintf(stderr, "error: maximum buffer size for user input is %d", SH_CMD_MAX);
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF) { }
+            
+            continue;
+        }
 
 		cmd_buff[strcspn(cmd_buff, "\n")] = '\0';
 		if (strlen(cmd_buff) == 0) {
