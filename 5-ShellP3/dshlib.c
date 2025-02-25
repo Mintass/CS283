@@ -47,6 +47,16 @@ int free_cmd_buff(cmd_buff_t *cmd_buff) {
 		}
 	}
 
+    if (cmd_buff->input_file) {
+        free(cmd_buff->input_file);
+        cmd_buff->input_file = NULL;
+    }
+
+    if (cmd_buff->output_file) {
+        free(cmd_buff->output_file);
+        cmd_buff->output_file = NULL;
+    }
+    
 	cmd_buff->argc = 0;
 	return OK;
 }
@@ -173,6 +183,28 @@ int close_cmd_buff(cmd_buff_t *cmd_buff) {
 }
 
 /* -------------------- redirect processing -------------------- */
+char *expand_path(const char *path) {
+    if (path[0] == '~') {
+        const char *home = getenv("HOME");
+        if (!home) {
+            fprintf(stderr, "Error: HOME environment variable not set.\n");
+            return strdup(path);
+        }
+
+        size_t len = strlen(home) + strlen(path); 
+        char *expanded = malloc(len);
+        if (!expanded) {
+            perror("malloc");
+            exit(EXIT_FAILURE);
+        }
+
+        sprintf(expanded, "%s%s", home, path + 1);
+        return expanded;
+    }
+
+    return strdup(path);
+}
+
 int process_redirection(cmd_buff_t *cmd) {
 	int i = 0, j = 0;
 	while (cmd->argv[i] != NULL) {
@@ -187,7 +219,8 @@ int process_redirection(cmd_buff_t *cmd) {
 				return ERR_CMD_ARGS_BAD;
 			}
 
-			cmd->input_file = strdup(cmd->argv[i+1]);
+			cmd->input_file = cmd->argv[i+1];
+            free(cmd->argv[i]);
 			i += 2;
 		} else if (strcmp(cmd->argv[i], OUTPUT_REDIRECT) == 0) {
 			if (cmd->argv[i+1] == NULL) {
@@ -240,11 +273,18 @@ int build_cmd_list(char *cmd_line, command_list_t *clist) {
 		}
 
 		if (*token == '\0') {
-			token = strtok_r(NULL, PIPE_STRING, &saveptr);
-			continue;
+            for (int i = 0; i < count; i++) {
+                free_cmd_buff(&clist->commands[i]);
+            }
+
+            return WARN_NO_CMDS;
 		}
 
 		if (count >= CMD_MAX) {
+            for (int i = 0; i < count; i++) {
+                free_cmd_buff(&clist->commands[i]);
+            }
+            
 			return ERR_TOO_MANY_COMMANDS;
 		}
 
@@ -264,6 +304,15 @@ int build_cmd_list(char *cmd_line, command_list_t *clist) {
         if (rc != OK) {
             return rc;
         }
+
+        if (clist->commands[count].argc == 0) {
+            free_cmd_buff(&clist->commands[count]);
+            for (int i = 0; i < count; i++) {
+                free_cmd_buff(&clist->commands[i]);
+            }
+
+            return WARN_NO_CMDS;
+        }
         
 		count++;
 		token = strtok_r(NULL, PIPE_STRING, &saveptr);
@@ -273,6 +322,19 @@ int build_cmd_list(char *cmd_line, command_list_t *clist) {
 	if (count == 0) {
 		return WARN_NO_CMDS;
 	}
+
+    if (clist->num >= 3) {
+        for (int i = 1; i < clist->num - 1; i++) {
+            if (clist->commands[i].input_file != NULL || clist->commands[i].output_file != NULL) {
+                for (int j = 0; j < clist->num; j++) {
+                    free_cmd_buff(&clist->commands[j]);
+                }
+
+                fprintf(stderr, "error:redirection not allowed in intermediate commands\n");
+                return ERR_CMD_ARGS_BAD;
+            }
+        }
+    }
 
 	return OK;
 }
@@ -346,7 +408,8 @@ int exec_cmd(cmd_buff_t *cmd) {
 	if (pid == 0) {
 		// extra credit
 		if (cmd->input_file != NULL) {
-			int fd_in = open(cmd->input_file, O_RDONLY);
+            char *input_path = expand_path(cmd->input_file);
+			int fd_in = open(input_path, O_RDONLY);
 			if (fd_in < 0) {
 				perror("open input file");
 				exit(ERR_EXEC_CMD);
@@ -357,11 +420,12 @@ int exec_cmd(cmd_buff_t *cmd) {
 		}
 
 		if (cmd->output_file != NULL) {
+            char *output_path = expand_path(cmd->output_file);
 			int fd_out;
 			if (cmd->append) {
-				fd_out = open(cmd->output_file, O_WRONLY | O_CREAT | O_APPEND, 0644);
+				fd_out = open(output_path, O_WRONLY | O_CREAT | O_APPEND, 0644);
 			} else {
-				fd_out = open(cmd->output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+				fd_out = open(output_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 			}
 
 			if (fd_out < 0) {
@@ -416,7 +480,8 @@ int execute_pipeline(command_list_t *clist) {
 
 			// extra credit
 			if (i == 0 && clist->commands[i].input_file != NULL) {
-				int fd_in = open(clist->commands[i].input_file, O_RDONLY);
+                char *input_path = expand_path(clist->commands[i].input_file);
+				int fd_in = open(input_path, O_RDONLY);
 				if (fd_in < 0) {
 					perror("open input file");
 					exit(ERR_EXEC_CMD);
@@ -427,11 +492,12 @@ int execute_pipeline(command_list_t *clist) {
 			}
 
 			if (i == num - 1 && clist->commands[i].output_file != NULL) {
+                char *output_path = expand_path(clist->commands[i].output_file);
 				int fd_out;
 				if (clist->commands[i].append) {
-					fd_out = open(clist->commands[i].output_file, O_WRONLY | O_CREAT | O_APPEND, 0644);
+					fd_out = open(output_path, O_WRONLY | O_CREAT | O_APPEND, 0644);
 				} else {
-					fd_out = open(clist->commands[i].output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+					fd_out = open(output_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 				}
 
 				if (fd_out < 0) {

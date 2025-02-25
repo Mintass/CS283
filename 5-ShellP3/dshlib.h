@@ -93,6 +93,7 @@ int exec_local_cmd_loop();
 int exec_cmd(cmd_buff_t *cmd);
 int execute_pipeline(command_list_t *clist);
 int process_redirection(cmd_buff_t *cmd);   // extra credit
+char *expand_path(const char *path);    // extra credit
 
 //drexel dragon
 extern void print_dragon();

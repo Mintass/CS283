@@ -9,7 +9,7 @@ setup() {
 }
 
 teardown() {
-  rm -f $HOME/tmp/in.txt $HOME/tmp/in2.txt $HOME/tmp/out.txt $HOME/tmp/another.txt $HOME/tmp/notwritable.txt
+  rm -f $HOME/tmp/re_in.txt $HOME/tmp/re_in2.txt $HOME/tmp/re_out.txt $HOME/tmp/another.txt $HOME/tmp/notwritable.txt $HOME/tmp/pipe_in.txt $HOME/tmp/pipe_out.txt
 }
 
 # Command Parsing Test
@@ -136,12 +136,29 @@ EOF
     [ "$status" -eq 0 ]
 }
 
+@test "cd with too many arguments" {
+    run "./dsh" <<EOF
+cd a b
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="cd:toomanyargumentsdsh3>dsh3>cmdloopreturned0"
+
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
 # Redirection Test
 @test "input redirection normal" {
-    echo "Hello World" > $HOME/tmp/in.txt
+    echo "Hello World" > $HOME/tmp/re_in.txt
 
     run "./dsh" <<EOF
-cat < $HOME/tmp/in.txt
+cat < $HOME/tmp/re_in.txt
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
@@ -174,11 +191,11 @@ EOF
 }
 
 @test "multiple input redirection" {
-    echo "Content1" > $HOME/tmp/in.txt
-    echo "Content2" > $HOME/tmp/in2.txt
+    echo "Content1" > $HOME/tmp/re_in.txt
+    echo "Content2" > $HOME/tmp/re_in2.txt
 
     run "./dsh" <<EOF
-cat < $HOME/tmp/in.txt < $HOME/tmp/in2.txt
+cat < $HOME/tmp/re_in.txt < $HOME/tmp/re_in2.txt
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
@@ -194,11 +211,11 @@ EOF
 }
 
 @test "output redirection overwrite" {
-    rm -f $HOME/tmp/out.txt
+    rm -f $HOME/tmp/re_out.txt
 
     run "./dsh" <<EOF
-echo "HelloOverwrite" > $HOME/tmp/out.txt
-cat < $HOME/tmp/out.txt
+echo "HelloOverwrite" > $HOME/tmp/re_out.txt
+cat < $HOME/tmp/re_out.txt
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
@@ -214,12 +231,12 @@ EOF
 }
 
 @test "output redirection append" {
-    rm -f $HOME/tmp/out.txt
+    rm -f $HOME/tmp/re_out.txt
 
     run "./dsh" <<EOF
-echo "Line1" > $HOME/tmp/out.txt
-echo "Line2" >> $HOME/tmp/out.txt
-cat < $HOME/tmp/out.txt
+echo "Line1" > $HOME/tmp/re_out.txt
+echo "Line2" >> $HOME/tmp/re_out.txt
+cat < $HOME/tmp/re_out.txt
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
@@ -270,7 +287,7 @@ EOF
 
 @test "multiple output redirection" {
     run "./dsh" <<EOF
-echo "Hello" > $HOME/tmp/out.txt > $HOME/tmp/another.txt
+echo "Hello" > $HOME/tmp/re_out.txt > $HOME/tmp/another.txt
 EOF
 
     stripped_output=$(echo "$output" | tr -d '[:space:]')
@@ -320,6 +337,202 @@ EOF
     echo "Exit Status: $status"
     echo "${stripped_output} -> ${expected_output}"
 
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "redirection without commands" {
+    run "./dsh" <<EOF
+< re_input.txt | pwd | > re_output.txt
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="warning:nocommandsprovideddsh3>dsh3>cmdloopreturned0"
+
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+# pipe test
+@test "single command execution" {
+    run "./dsh" <<EOF
+echo "HelloSingle"
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="HelloSingledsh3>dsh3>cmdloopreturned0"
+    
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+    
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "two command pipeline" {
+    run "./dsh" <<EOF
+echo "hello.c world" | grep ".c"
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="hello.cworlddsh3>dsh3>cmdloopreturned0"
+    
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+    
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "three command pipeline" {
+    run "./dsh" <<EOF
+printf "3\n2\n1\n" | cat | sort
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="123dsh3>dsh3>cmdloopreturned0"
+    
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+    
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "pipeline with Mixed redirection" {
+    echo -e "bar\nfoo\nbazfoo\nabc" > ~/tmp/pipe_in.txt
+
+    run "./dsh" <<EOF
+cat < ~/tmp/pipe_in.txt | grep foo | sort > ~/tmp/pipe_out.txt
+EOF
+
+    file_content=$(cat ~/tmp/pipe_out.txt | tr -d '[:space:]')
+    expected_file_content="bazfoofoo"
+    echo "Captured file content:"
+    echo "Content: $file_content"
+    [ "$file_content" = "$expected_file_content" ]
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="dsh3>dsh3>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+    
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "pipeline with CMD_MAX commands" {
+    run "./dsh" <<EOF
+echo 1 | cat | cat | cat | cat | cat | cat | cat
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="1dsh3>dsh3>cmdloopreturned0"
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+    
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "pipeline with command parsing error" {
+    run "./dsh" <<EOF
+echo hello | cat <
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="redirect:missinginputfileforredirectionerrorparsingcommandlinedsh3>dsh3>cmdloopreturned0"
+    
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+    
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "empty command segment" {
+    run "./dsh" <<EOF
+ls | | grep foo
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="warning:nocommandsprovideddsh3>dsh3>cmdloopreturned0"
+
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "intermediate command redirection" {
+    echo "dummy" > ~/tmp/pipe_in.txt
+
+    run "./dsh" <<EOF
+echo hello | grep foo < ~/tmp/pipe_in.txt | sort
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="error:redirectionnotallowedinintermediatecommandserrorparsingcommandlinedsh3>dsh3>cmdloopreturned0"
+
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+    
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "partial command failure" {
+    run "./dsh" <<EOF
+nonexistent_command | cat
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="execvp:Nosuchfileordirectorydsh3>dsh3>dsh3>cmdloopreturned0"
+    
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+    
+    [ "$stripped_output" = "$expected_output" ]
+    [ "$status" -eq 0 ]
+}
+
+@test "mixed builtin and external commands in pipeline" {
+    run "./dsh" <<EOF
+echo hello | cd /tmp
+EOF
+
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+    expected_output="execvp:Nosuchfileordirectorydsh3>dsh3>dsh3>cmdloopreturned0"
+    
+    echo "Captured stdout:"
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+    
     [ "$stripped_output" = "$expected_output" ]
     [ "$status" -eq 0 ]
 }
