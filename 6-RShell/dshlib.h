@@ -25,7 +25,7 @@ typedef struct cmd_buff
     char *_cmd_buffer;
     char *input_file;  // extra credit, stores input redirection file (for `<`)
     char *output_file; // extra credit, stores output redirection file (for `>`)
-    bool append_mode; // extra credit, sets append mode fomr output_file
+    bool append; // extra credit, sets append mode fomr output_file
 } cmd_buff_t;
 
 typedef struct command_list{
@@ -37,6 +37,11 @@ typedef struct command_list{
 #define SPACE_CHAR  ' '
 #define PIPE_CHAR   '|'
 #define PIPE_STRING "|"
+
+// Redirection operator
+#define INPUT_REDIRECT "<"
+#define OUTPUT_REDIRECT ">"
+#define APPEND_REDIRECT ">>"
 
 #define SH_PROMPT       "dsh4> "
 #define EXIT_CMD        "exit"
