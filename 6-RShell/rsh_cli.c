@@ -92,7 +92,68 @@
  */
 int exec_remote_cmd_loop(char *address, int port)
 {
-    return WARN_RDSH_NOT_IMPL;
+    int cli_socket;
+    char *cmd_buff = malloc(RDSH_COMM_BUFF_SZ);
+    char *rsp_buff = malloc(RDSH_COMM_BUFF_SZ);
+
+    if (!cmd_buff || !rsp_buff) {
+        free(cmd_buff);
+        free(rsp_buff);
+
+        return ERR_MEMORY;
+    }
+    
+    cli_socket = start_client(address, port);
+    if (cli_socket < 0) {
+        return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_CLIENT);
+    }
+    
+    while (1) {
+        printf("%s", SH_PROMPT);
+        if (fgets(cmd_buff, RDSH_COMM_BUFF_SZ, stdin) == NULL) {
+			printf("\n");
+			break;
+		}
+
+        size_t len = strlen(cmd_buff);
+        if (len > 0 && cmd_buff[len - 1] == '\n') {
+            cmd_buff[len - 1] = '\0';
+        }
+
+        if (send(cli_socket, cmd_buff, strlen(cmd_buff) + 1, 0) < 0) {
+            perror("send");
+            return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
+        }
+
+        int total_received = 0;
+        while (1) {
+            int bytes_received = recv(cli_socket, rsp_buff + total_received, RDSH_COMM_BUFF_SZ - total_received, 0);
+            if (bytes_received < 0) {
+                perror("recv");
+                return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
+            }
+
+            if (bytes_received == 0) {
+                printf(RCMD_SERVER_EXITED);
+                return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
+            }
+            
+            total_received += bytes_received;
+            if (rsp_buff[total_received - 1] == RDSH_EOF_CHAR) {
+                rsp_buff[total_received - 1] = '\0';
+                break;
+            }
+        }
+
+        printf("%.*s", total_received, rsp_buff);
+        if (strcmp(cmd_buff, "exit") == 0 || strcmp(cmd_buff, "stop-server") == 0) {
+            break;
+        }
+    
+        memset(rsp_buff, 0, RDSH_COMM_BUFF_SZ);
+    }
+
+    return client_cleanup(cli_socket, cmd_buff, rsp_buff, OK);
 }
 
 /*
@@ -119,7 +180,33 @@ int exec_remote_cmd_loop(char *address, int port)
  * 
  */
 int start_client(char *server_ip, int port){
-    return WARN_RDSH_NOT_IMPL;
+    int client_socket;
+    struct sockaddr_in serv_addr;
+
+    client_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_socket < 0) {
+        perror("socket");
+        return ERR_RDSH_CLIENT;
+    }
+
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port);
+    if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0) {
+        perror("inet_pton");
+        close(client_socket);
+
+        return ERR_RDSH_CLIENT;
+    }
+
+    if (connect(client_socket, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+        perror("connect");
+        close(client_socket);
+
+        return ERR_RDSH_CLIENT;
+    }
+
+    return client_socket;
 }
 
 /*
