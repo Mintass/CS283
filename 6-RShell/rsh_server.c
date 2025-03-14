@@ -9,6 +9,7 @@
 #include <sys/un.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/time.h>
 
 //INCLUDES for extra credit
 #include <signal.h>
@@ -18,7 +19,110 @@
 #include "dshlib.h"
 #include "rshlib.h"
 
+typedef struct {
+    int client_socket;
+} client_thread_data_t;
+pthread_mutex_t server_mutex = PTHREAD_MUTEX_INITIALIZER;
+volatile int server_running = 1;
 
+void* handle_client_connection(void* arg) {
+    client_thread_data_t *client_data = (client_thread_data_t*)arg;
+    int client_socket = client_data->client_socket;  
+    int flags = fcntl(client_socket, F_GETFL, 0);
+    fcntl(client_socket, F_SETFL, flags & ~O_NONBLOCK);
+    
+    int rc = exec_client_requests(client_socket);
+    if (rc == OK_EXIT) {
+        printf("Client requested server shutdown\n");
+        pthread_mutex_lock(&server_mutex);
+        server_running = 0;
+        pthread_mutex_unlock(&server_mutex);
+
+        int temp_socket = socket(AF_INET, SOCK_STREAM, 0);
+        if (temp_socket >= 0) {
+            struct sockaddr_in serv_addr;
+            memset(&serv_addr, 0, sizeof(serv_addr));
+            serv_addr.sin_family = AF_INET;
+            serv_addr.sin_port = htons(RDSH_DEF_PORT);
+            inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
+            
+            connect(temp_socket, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+            close(temp_socket);
+        }
+    }
+    
+    close(client_socket);
+    free(client_data);
+    
+    return NULL;
+}
+
+int process_threaded_cli_requests(int svr_socket) {
+    int client_socket;
+    pthread_t thread_id;
+    struct sockaddr_in client_addr;
+    socklen_t addrlen = sizeof(client_addr);
+    int rc = OK;
+
+    server_running = 1;
+    signal(SIGPIPE, SIG_IGN);
+    
+    struct timeval timeout;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+    
+    if (setsockopt(svr_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
+        perror("setsockopt timeout");
+    }
+    
+    printf("Threaded server started. Waiting for connections...\n");
+    
+    while (1) {
+        pthread_mutex_lock(&server_mutex);
+        int should_continue = server_running;
+        pthread_mutex_unlock(&server_mutex);
+        
+        if (!should_continue) {
+            printf("Server shutting down...\n");
+            break;
+        }
+        
+        client_socket = accept(svr_socket, (struct sockaddr*)&client_addr, &addrlen);
+        if (client_socket < 0) {
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
+                continue;
+            }
+            
+            perror("accept");
+            rc = ERR_RDSH_COMMUNICATION;
+            break;
+        }
+        
+        char client_ip[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(client_addr.sin_addr), client_ip, INET_ADDRSTRLEN);
+        printf("New client connected from %s:%d\n", client_ip, ntohs(client_addr.sin_port));
+        
+        client_thread_data_t *client_data = malloc(sizeof(client_thread_data_t));
+        if (!client_data) {
+            close(client_socket);
+            perror("malloc");
+            continue;
+        }
+        
+        client_data->client_socket = client_socket;
+        
+        if (pthread_create(&thread_id, NULL, handle_client_connection, client_data) != 0) {
+            perror("pthread_create");
+            free(client_data);
+            close(client_socket);
+            continue;
+        }
+        
+        pthread_detach(thread_id);
+    }
+    
+    return rc;
+}
 
 /*
  * start_server(ifaces, port, is_threaded)
@@ -52,22 +156,21 @@ int start_server(char *ifaces, int port, int is_threaded){
     int svr_socket;
     int rc;
 
-    //
-    //TODO:  If you are implementing the extra credit, please add logic
-    //       to keep track of is_threaded to handle this feature
-    //
-
     svr_socket = boot_server(ifaces, port);
     if (svr_socket < 0){
         int err_code = svr_socket;  //server socket will carry error code
         return err_code;
     }
 
-    rc = process_cli_requests(svr_socket);
+    if (is_threaded) {
+        printf("Starting multi-threaded server...\n");
+        rc = process_threaded_cli_requests(svr_socket);
+    } else {
+        printf("Starting single-threaded server...\n");
+        rc = process_cli_requests(svr_socket);
+    }
 
     stop_server(svr_socket);
-
-
     return rc;
 }
 
@@ -280,13 +383,19 @@ int exec_client_requests(int cli_socket) {
         int found_null = 0;
         while (1) {
             bytes_received = recv(cli_socket, io_buff + total_bytes, RDSH_COMM_BUFF_SZ - total_bytes, 0);
+            
             if (bytes_received < 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+                    continue;
+                }
+                
                 perror("recv");
                 free(io_buff);
                 return ERR_RDSH_COMMUNICATION;
             }
 
             if (bytes_received == 0) {
+                printf("Client disconnected\n");
                 free(io_buff);
                 return OK;
             }
@@ -304,10 +413,12 @@ int exec_client_requests(int cli_socket) {
             }
         }
 
+        io_buff[total_bytes] = '\0';        
         command_list_t clist;
         memset(&clist, 0, sizeof(clist));
         int rc = build_cmd_list(io_buff, &clist);
         if (rc != OK) {
+            send_message_string(cli_socket, "Error parsing command\n");
             send_message_eof(cli_socket);
             continue;
         }
@@ -320,13 +431,14 @@ int exec_client_requests(int cli_socket) {
                     send_message_eof(cli_socket);
                     free_cmd_buff(&clist.commands[0]);
                     free(io_buff);
-                    return OK;
 
+                    return OK;
                 } else if (result == BI_CMD_STOP_SVR) {
                     send_message_string(cli_socket, RCMD_MSG_SVR_STOP_REQ);
                     send_message_eof(cli_socket);
                     free_cmd_buff(&clist.commands[0]);
                     free(io_buff);
+
                     return OK_EXIT;
                 }
 
@@ -336,7 +448,7 @@ int exec_client_requests(int cli_socket) {
             }
         }
 
-        rsh_execute_pipeline(cli_socket, &clist);
+        rc = rsh_execute_pipeline(cli_socket, &clist);
         send_message_eof(cli_socket);
         for (int i = 0; i < clist.num; i++) {
             free_cmd_buff(&clist.commands[i]);
